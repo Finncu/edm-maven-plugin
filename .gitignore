@@ -15,4 +15,7 @@ buildNumber.properties
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+
+*flattened*.xml
+*/.flattened-pom.xml
 .flattened-pom.xml
