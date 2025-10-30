@@ -1,0 +1,30 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<parent>
+		<groupId>de.finncu.dev.maven</groupId>
+		<artifactId>maven-plugin-config</artifactId>
+		<version>${revision}</version>
+	</parent>
+
+
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>maven-plugins-tile</artifactId>
+	<packaging>tile</packaging>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>io.repaint.maven</groupId>
+				<artifactId>tiles-maven-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<filtering>true</filtering>
+					<buildSmells>dependencies,pluginmanagement</buildSmells>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

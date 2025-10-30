@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>extensional-dependency-exclusions</artifactId>
+    <name>IT - extensional dependency exclusions</name>
+
+    <parent>
+        <groupId>de.finncu.dev.maven</groupId>
+        <artifactId>extensional-dependency-management-test</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>dependency-exclusions-enforcing</module>
+    </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>de.finncu.dev.maven</groupId>
+                <artifactId>extensional-dependency-management-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>extensional-dependency-exclusions</id>
+                        <goals>
+                            <goal>extend-dependency-management</goal>
+                        </goals>
+                        <configuration>
+                            <dependencies>
+                                <dependency>
+                                    <groupId>io.undertow</groupId>
+                                    <artifactId>undertow-core</artifactId>
+                                    <exclusions>
+                                        <exclusion>
+                                            <groupId>org.jboss.xnio</groupId>
+                                            <artifactId>xnio-nio</artifactId>
+                                        </exclusion>
+                                    </exclusions>
+                                </dependency>
+                            </dependencies>
+                        </configuration>
+                    </execution>
+<!--                    <execution>-->
+<!--                        <id>sniff-dependency-versions</id>-->
+<!--                        <goals>-->
+<!--                            <goal>sniff-dependency-versions</goal>-->
+<!--                        </goals>-->
+<!--                        <configuration>-->
+<!--                            <dependencies>-->
+<!--                                <dependency>-->
+<!--                                    <groupId>io.undertow</groupId>-->
+<!--                                    <artifactId>undertow-core</artifactId>-->
+<!--                                </dependency>-->
+<!--                            </dependencies>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+<!--    <dependencyManagement>-->
+<!--        <dependencies>-->
+<!--            <dependency>-->
+<!--                <groupId>io.undertow</groupId>-->
+<!--                <artifactId>undertow-core</artifactId>-->
+<!--                <version>${io.undertow:undertow-core.version}</version>-->
+<!--            </dependency>-->
+<!--        </dependencies>-->
+<!--    </dependencyManagement>-->
+
+</project>

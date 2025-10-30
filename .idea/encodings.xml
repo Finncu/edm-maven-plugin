@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/extensional-dependency-management-plugin/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/extensional-dependency-management-plugin/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/extensional-dependency-management-test/extensional-dependency-exclusions/dependency-exclusions-enforcing/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/extensional-dependency-management-test/extensional-dependency-exclusions/dependency-exclusions-enforcing/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/extensional-dependency-management-test/extensional-dependency-exclusions/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/extensional-dependency-management-test/extensional-dependency-exclusions/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/extensional-dependency-management-test/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/extensional-dependency-management-test/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/extensional-dependency-management/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/maven-plugins-tile/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/maven-plugins-tile/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+  </component>
+</project>

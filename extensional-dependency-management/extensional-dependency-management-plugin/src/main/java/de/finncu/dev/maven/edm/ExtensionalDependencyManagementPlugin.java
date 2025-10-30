@@ -1,0 +1,104 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more contributor license agreements. See the NOTICE
+ * file distributed with this work for additional information regarding copyright ownership. The ASF licenses this file
+ * to You under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package de.finncu.dev.maven.edm;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Exclusion;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
+
+/**
+ * Extends the existing dependency management definitions by adding exclusions (or other attributes) to dependencies
+ * already present in the project's {@code <dependencyManagement>} section.
+ *
+ * <p>
+ * This allows configuration of exclusions via plugin parameters instead of modifying the primary
+ * {@code <dependencyManagement>} block directly.
+ * </p>
+ * *
+ * 
+ * <pre>
+ * &lt;dependencies&gt;
+ *    &lt;dependency&gt;
+ *       &lt;groupId&gt;...&lt;/groupId&gt;
+ *       &lt;artifactId&gt;...&lt;/artifactId&gt;
+ *       ...
+ *       &lt;exclusions&gt;
+ *          &lt;exclusion&gt;
+ *             &lt;groupId&gt;A&lt;/groupId&gt;
+ *             &lt;artifactId&gt;B&lt;/artifactId&gt;
+ *          &lt;/exclusion&gt;
+ *       &lt;/exclusions&gt;
+ *    &lt;/dependency&gt;
+ * &lt;/dependencies&gt;
+ * </pre>
+ */
+@Mojo(name = "extend-dependency-management", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
+public class ExtensionalDependencyManagementPlugin extends AbstractMojo {
+
+   private static final Function<? super Exclusion, String> EXCLUSION_KEY_BUILDER =
+         exclusion -> exclusion.getGroupId() + ":" + exclusion.getArtifactId();
+   /**
+    * Should always be supplied by the Maven runner - provides the Maven project structure + dependency mappings
+    */
+   @Parameter(property = "project", required = true, readonly = true, defaultValue = "${project}")
+   private MavenProject project;
+   @Parameter()
+   private Dependency[] dependencies;
+
+   public void execute() {
+      Map<String, Dependency> presentManagementDependencies = project.getDependencyManagement()
+            .getDependencies()
+            .stream()
+            .collect(Collectors.toMap(Dependency::getManagementKey, d -> d));
+
+      for (Dependency dependency : dependencies) {
+         Dependency existingDependency = presentManagementDependencies.get(dependency.getManagementKey());
+         Optional<Dependency> extensionalDependency = Optional.of(dependency);
+         if (existingDependency != null) {
+            getLog().info("found managed dependency: " + existingDependency.getManagementKey());
+            getLog().info("extend management dependency with: " + buildDependencyStringOf(dependency));
+            extensionalDependency.map(Dependency::getExclusions).ifPresent(existingDependency.getExclusions()::addAll);
+            extensionalDependency.map(Dependency::getScope).ifPresent(existingDependency::setScope);
+            extensionalDependency.map(Dependency::getClassifier).ifPresent(existingDependency::setClassifier);
+         } else if (dependency.getVersion() == null)
+            getLog().warn(
+               "No managed dependency found for " + dependency.getManagementKey()
+                  + " - ignoring dependency in case of missing version");
+         else {
+            getLog().info(
+               "No managed dependency found for " + dependency.getManagementKey() + " - using dependency in version"
+                  + dependency.getVersion());
+            project.getDependencyManagement().addDependency(dependency);
+         }
+      }
+   }
+
+   private String buildDependencyStringOf(Dependency dependency) {
+      String version, scope, classifier;
+      return dependency.getManagementKey() + ((version = dependency.getVersion()) != null ? ":" + version : "") + " {"
+         + ((scope = dependency.getScope()) != null ? " scope: " + scope : "")
+         + ((classifier = dependency.getClassifier()) != null ? " classifier:" + classifier : "")
+         + ((version = dependency.getVersion()) != null ? ":" + version : "")
+         + (dependency.getExclusions().isEmpty() ? "" : " exclusions: { "
+            + dependency.getExclusions().stream().map(EXCLUSION_KEY_BUILDER).collect(Collectors.joining(", ")) + " }")
+         + "}";
+   }
+}
