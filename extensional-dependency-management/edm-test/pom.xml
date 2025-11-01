@@ -39,7 +39,7 @@
             <plugins>
                 <plugin>
                     <groupId>de.silverhorn.fca.maven</groupId>
-                    <artifactId>extensional-dependency-management-plugin</artifactId>
+                    <artifactId>edm-maven-plugin</artifactId>
                     <version>${revision}</version>
                 </plugin>
             </plugins>
