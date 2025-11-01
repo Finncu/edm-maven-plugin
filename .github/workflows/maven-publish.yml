@@ -30,6 +30,7 @@ jobs:
       run: mvn -B package --file pom.xml
 
     - name: Publish to GitHub Packages Apache Maven
-      run: mvn deploy -f .flattened-pom.xml -Drevision={{ github.ref_name }} -s $GITHUB_WORKSPACE/settings.xml
+      run: mvn deploy -f .flattened-pom.xml -Drevision={{ github.ref_name }} -s $GITHUB_WORKSPACE/settings.xml \
+        -DaltDeploymentRepository=github:default:https://maven.pkg.github.com/finncu/edm-maven-plugin
       env:
         GITHUB_TOKEN: ${{ github.token }}
