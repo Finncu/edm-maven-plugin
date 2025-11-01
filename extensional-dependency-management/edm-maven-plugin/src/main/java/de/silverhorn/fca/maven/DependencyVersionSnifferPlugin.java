@@ -19,38 +19,10 @@ import java.util.stream.Collectors;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Exclusion;
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
-import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
-/**
- * Extends the existing dependency management definitions by adding exclusions (or other attributes) to dependencies
- * already present in the project's {@code <dependencyManagement>} section.
- *
- * <p>
- * This allows configuration of exclusions via plugin parameters instead of modifying the primary
- * {@code <dependencyManagement>} block directly.
- * </p>
- * *
- * 
- * <pre>
- * &lt;dependencies&gt;
- *    &lt;dependency&gt;
- *       &lt;groupId&gt;...&lt;/groupId&gt;
- *       &lt;artifactId&gt;...&lt;/artifactId&gt;
- *       ...
- *       &lt;exclusions&gt;
- *          &lt;exclusion&gt;
- *             &lt;groupId&gt;A&lt;/groupId&gt;
- *             &lt;artifactId&gt;B&lt;/artifactId&gt;
- *          &lt;/exclusion&gt;
- *       &lt;/exclusions&gt;
- *    &lt;/dependency&gt;
- * &lt;/dependencies&gt;
- * </pre>
- */
-@Mojo(name = "sniff-dependency-versions", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
+//@Mojo(name = "sniff-dependency-versions", defaultPhase = LifecyclePhase.VALIDATE, threadSafe = true)
 public class DependencyVersionSnifferPlugin extends AbstractMojo {
 
    private static final Function<? super Exclusion, String> EXCLUSION_KEY_BUILDER =

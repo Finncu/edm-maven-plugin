@@ -9,7 +9,7 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>extensional-dependency-management-plugin</artifactId>
+    <artifactId>edm-maven-plugin</artifactId>
     <name>maven extensional dependency management plugin</name>
     <packaging>maven-plugin</packaging>
 
