@@ -15,8 +15,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>extensional-dependency-management-plugin</module>
-        <module>extensional-dependency-management-test</module>
+        <module>edm-maven-plugin</module>
+        <module>edm-test</module>
     </modules>
 
 </project>
