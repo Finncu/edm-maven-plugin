@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<parent>
-		<groupId>de.finncu.dev.maven</groupId>
+		<groupId>de.silverhorn.fca.maven</groupId>
 		<artifactId>maven-plugin-config</artifactId>
 		<version>${revision}</version>
 	</parent>

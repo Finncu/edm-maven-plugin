@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>de.finncu.dev.maven</groupId>
+        <groupId>de.silverhorn.fca.maven</groupId>
         <artifactId>extensional-dependency-management-plugin-config</artifactId>
         <version>${revision}</version>
     </parent>
@@ -35,7 +35,7 @@
 				<artifactId>tiles-maven-plugin</artifactId>
 				<configuration>
 					<tiles>
-						<tile>de.finncu.dev.maven:maven-plugins-tile:${revision}</tile>
+						<tile>de.silverhorn.fca.maven:maven-plugins-tile:${revision}</tile>
 					</tiles>
 				</configuration>
 			</plugin>

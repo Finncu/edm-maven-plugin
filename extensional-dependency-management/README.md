@@ -42,7 +42,7 @@ Add the plugin to your custom build POM or your custom build tile:
 <build>
     <plugins>
         <plugin>
-            <groupId>de.finncu.dev.maven</groupId>
+            <groupId>de.silverhorn.fca.maven</groupId>
             <artifactId>extensional-dependency-management-plugin</artifactId>
             <version>1.0.1</version>
             <executions>
@@ -69,7 +69,7 @@ Suppose you're using a BOM that includes `undertow-core`, but you want to exclud
 
 ```xml
 <plugin>
-    <groupId>de.finncu.dev.maven</groupId>
+    <groupId>de.silverhorn.fca.maven</groupId>
     <artifactId>extensional-dependency-management-plugin</artifactId>
     <version>1.0.1</version>
     <executions>
@@ -190,7 +190,7 @@ If a dependency is not already in dependency management, you can add it by speci
     <build>
         <plugins>
             <plugin>
-                <groupId>de.finncu.dev.maven</groupId>
+                <groupId>de.silverhorn.fca.maven</groupId>
                 <artifactId>extensional-dependency-management-plugin</artifactId>
                 <version>1.0.1</version>
                 <executions>
@@ -347,7 +347,7 @@ Define the plugin in your parent POM to apply exclusions to all child modules:
     <pluginManagement>
         <plugins>
             <plugin>
-                <groupId>de.finncu.dev.maven</groupId>
+                <groupId>de.silverhorn.fca.maven</groupId>
                 <artifactId>extensional-dependency-management-plugin</artifactId>
                 <version>1.0.1</version>
                 <executions>
@@ -380,7 +380,7 @@ Define the plugin in your parent POM to apply exclusions to all child modules:
     <plugins>
         <!-- Activate the plugin -->
         <plugin>
-            <groupId>de.finncu.dev.maven</groupId>
+            <groupId>de.silverhorn.fca.maven</groupId>
             <artifactId>extensional-dependency-management-plugin</artifactId>
         </plugin>
     </plugins>
@@ -398,7 +398,7 @@ You can use Maven properties in the configuration:
 </properties>
 
 <plugin>
-    <groupId>de.finncu.dev.maven</groupId>
+    <groupId>de.silverhorn.fca.maven</groupId>
     <artifactId>extensional-dependency-management-plugin</artifactId>
     <version>1.0.1</version>
     <executions>
@@ -462,7 +462,7 @@ You can use Maven properties in the configuration:
 
 <!-- Plugin configuration (once) -->
 <plugin>
-    <groupId>de.finncu.dev.maven</groupId>
+    <groupId>de.silverhorn.fca.maven</groupId>
     <artifactId>extensional-dependency-management-plugin</artifactId>
     <configuration>
         <dependencies>

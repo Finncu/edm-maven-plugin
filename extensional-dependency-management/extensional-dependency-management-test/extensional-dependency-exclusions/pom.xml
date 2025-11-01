@@ -7,7 +7,7 @@
     <name>IT - extensional dependency exclusions</name>
 
     <parent>
-        <groupId>de.finncu.dev.maven</groupId>
+        <groupId>de.silverhorn.fca.maven</groupId>
         <artifactId>extensional-dependency-management-test</artifactId>
         <version>${revision}</version>
     </parent>
@@ -21,7 +21,7 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>de.finncu.dev.maven</groupId>
+                <groupId>de.silverhorn.fca.maven</groupId>
                 <artifactId>extensional-dependency-management-plugin</artifactId>
                 <executions>
                     <execution>

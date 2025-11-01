@@ -8,7 +8,7 @@
     <name>maven extensional dependency management plugin integration tests</name>
 
     <parent>
-        <groupId>de.finncu.dev.maven</groupId>
+        <groupId>de.silverhorn.fca.maven</groupId>
         <artifactId>extensional-dependency-management-plugin-config</artifactId>
         <version>${revision}</version>
     </parent>
@@ -38,7 +38,7 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>de.finncu.dev.maven</groupId>
+                    <groupId>de.silverhorn.fca.maven</groupId>
                     <artifactId>extensional-dependency-management-plugin</artifactId>
                     <version>${revision}</version>
                 </plugin>

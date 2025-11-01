@@ -6,7 +6,7 @@
     <artifactId>dependency-exclusions-enforcing</artifactId>
 
     <parent>
-        <groupId>de.finncu.dev.maven</groupId>
+        <groupId>de.silverhorn.fca.maven</groupId>
         <artifactId>extensional-dependency-exclusions</artifactId>
         <version>${revision}</version>
     </parent>
