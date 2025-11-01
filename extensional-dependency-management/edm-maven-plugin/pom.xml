@@ -5,7 +5,7 @@
 
     <parent>
         <groupId>de.silverhorn.fca.maven</groupId>
-        <artifactId>extensional-dependency-management-plugin-config</artifactId>
+        <artifactId>edm-maven-plugin-config</artifactId>
         <version>${revision}</version>
     </parent>
 
