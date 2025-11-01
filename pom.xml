@@ -83,13 +83,6 @@
         </pluginManagement>
     </build>
 
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <url>https://maven.pkg.github.com/finncu/edm-maven-plugin</url>
-        </repository>
-    </distributionManagement>
-
     <developers>
         <developer>
             <name>Finn Cuypers</name>
