@@ -44,33 +44,9 @@
                             </dependencies>
                         </configuration>
                     </execution>
-<!--                    <execution>-->
-<!--                        <id>sniff-dependency-versions</id>-->
-<!--                        <goals>-->
-<!--                            <goal>sniff-dependency-versions</goal>-->
-<!--                        </goals>-->
-<!--                        <configuration>-->
-<!--                            <dependencies>-->
-<!--                                <dependency>-->
-<!--                                    <groupId>io.undertow</groupId>-->
-<!--                                    <artifactId>undertow-core</artifactId>-->
-<!--                                </dependency>-->
-<!--                            </dependencies>-->
-<!--                        </configuration>-->
-<!--                    </execution>-->
                 </executions>
             </plugin>
         </plugins>
     </build>
-
-<!--    <dependencyManagement>-->
-<!--        <dependencies>-->
-<!--            <dependency>-->
-<!--                <groupId>io.undertow</groupId>-->
-<!--                <artifactId>undertow-core</artifactId>-->
-<!--                <version>${io.undertow:undertow-core.version}</version>-->
-<!--            </dependency>-->
-<!--        </dependencies>-->
-<!--    </dependencyManagement>-->
 
 </project>
