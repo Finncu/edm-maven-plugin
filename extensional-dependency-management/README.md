@@ -43,7 +43,7 @@ Add the plugin to your custom build POM or your custom build tile:
     <plugins>
         <plugin>
             <groupId>de.silverhorn.fca.maven</groupId>
-            <artifactId>extensional-dependency-management-plugin</artifactId>
+            <artifactId>edm-maven-plugin</artifactId>
             <version>1.0.1</version>
             <executions>
                 <execution>
@@ -70,7 +70,7 @@ Suppose you're using a BOM that includes `undertow-core`, but you want to exclud
 ```xml
 <plugin>
     <groupId>de.silverhorn.fca.maven</groupId>
-    <artifactId>extensional-dependency-management-plugin</artifactId>
+    <artifactId>edm-maven-plugin</artifactId>
     <version>1.0.1</version>
     <executions>
         <execution>
@@ -191,7 +191,7 @@ If a dependency is not already in dependency management, you can add it by speci
         <plugins>
             <plugin>
                 <groupId>de.silverhorn.fca.maven</groupId>
-                <artifactId>extensional-dependency-management-plugin</artifactId>
+                <artifactId>edm-maven-plugin</artifactId>
                 <version>1.0.1</version>
                 <executions>
                     <execution>
@@ -348,7 +348,7 @@ Define the plugin in your parent POM to apply exclusions to all child modules:
         <plugins>
             <plugin>
                 <groupId>de.silverhorn.fca.maven</groupId>
-                <artifactId>extensional-dependency-management-plugin</artifactId>
+                <artifactId>edm-maven-plugin</artifactId>
                 <version>1.0.1</version>
                 <executions>
                     <execution>
@@ -381,7 +381,7 @@ Define the plugin in your parent POM to apply exclusions to all child modules:
         <!-- Activate the plugin -->
         <plugin>
             <groupId>de.silverhorn.fca.maven</groupId>
-            <artifactId>extensional-dependency-management-plugin</artifactId>
+            <artifactId>edm-maven-plugin</artifactId>
         </plugin>
     </plugins>
 </build>
@@ -399,7 +399,7 @@ You can use Maven properties in the configuration:
 
 <plugin>
     <groupId>de.silverhorn.fca.maven</groupId>
-    <artifactId>extensional-dependency-management-plugin</artifactId>
+    <artifactId>edm-maven-plugin</artifactId>
     <version>1.0.1</version>
     <executions>
         <execution>
@@ -463,7 +463,7 @@ You can use Maven properties in the configuration:
 <!-- Plugin configuration (once) -->
 <plugin>
     <groupId>de.silverhorn.fca.maven</groupId>
-    <artifactId>extensional-dependency-management-plugin</artifactId>
+    <artifactId>edm-maven-plugin</artifactId>
     <configuration>
         <dependencies>
             <dependency>
