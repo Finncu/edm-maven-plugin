@@ -11,6 +11,7 @@
         <groupId>de.silverhorn.fca.maven</groupId>
         <artifactId>edm-maven-plugin-config</artifactId>
         <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <modules>

@@ -16,7 +16,17 @@
 
     <modules>
         <module>edm-maven-plugin</module>
-        <module>edm-test</module>
+        <!--
+            edm-test is intentionally excluded from the main reactor.
+            It uses edm-maven-plugin with <extensions>true</extensions>, which requires
+            the plugin JAR to already be present in the local Maven repository when Maven
+            scans the POMs. Running both in the same reactor would cause a
+            "Unresolveable build extension" error.
+
+            Build order:
+              1. mvn install  (builds and installs the plugin)
+              2. mvn verify -f extensional-dependency-management/edm-test/pom.xml
+        -->
     </modules>
 
 </project>

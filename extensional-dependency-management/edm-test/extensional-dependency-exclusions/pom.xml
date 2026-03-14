@@ -10,6 +10,7 @@
         <groupId>de.silverhorn.fca.maven</groupId>
         <artifactId>edm-test</artifactId>
         <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <packaging>pom</packaging>

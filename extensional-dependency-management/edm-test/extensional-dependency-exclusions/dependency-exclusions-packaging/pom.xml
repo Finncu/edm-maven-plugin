@@ -31,6 +31,7 @@
         <groupId>de.silverhorn.fca.maven</groupId>
         <artifactId>extensional-dependency-exclusions</artifactId>
         <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <dependencies>
