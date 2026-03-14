@@ -16,6 +16,7 @@
 
     <modules>
         <module>dependency-exclusions-enforcing</module>
+        <module>dependency-exclusions-packaging</module>
     </modules>
 
     <build>
@@ -28,6 +29,7 @@
                         <id>extensional-dependency-exclusions</id>
                         <goals>
                             <goal>extend-dependency-management</goal>
+                            <goal>filter-resolved-artifacts</goal>
                         </goals>
                         <configuration>
                             <dependencies>

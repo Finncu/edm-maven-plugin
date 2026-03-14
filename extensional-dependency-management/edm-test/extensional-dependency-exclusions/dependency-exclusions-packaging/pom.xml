@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dependency-exclusions-packaging</artifactId>
+    <name>IT - dependency exclusions survive packaging (shade)</name>
+
+    <!--
+        Integration test that verifies the second line of defence:
+        the filter-resolved-artifacts goal must remove excluded artifacts from
+        project.getArtifacts() so that packaging tools (here: maven-shade-plugin)
+        never include them in the final JAR.
+
+        The parent POM (extensional-dependency-exclusions) already configures the
+        edm-maven-plugin to:
+          1. extend-dependency-management  – adds xnio-nio exclusion to undertow-core in the model
+          2. filter-resolved-artifacts     – removes xnio-nio from the resolved artifact set
+
+        This module then:
+          a. Declares undertow-core as a compile dependency (version from BOM).
+          b. Builds an uber-JAR via maven-shade-plugin.
+          c. Asserts via maven-enforcer-plugin (verify phase) that xnio-nio is absent.
+    -->
+
+    <parent>
+        <groupId>de.silverhorn.fca.maven</groupId>
+        <artifactId>extensional-dependency-exclusions</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.undertow</groupId>
+            <artifactId>undertow-core</artifactId>
+            <!-- version managed by wildfly-javaee7 BOM imported in edm-test parent -->
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!--
+                Build an uber-JAR that contains all compile+runtime dependencies.
+                This is the packaging scenario where the artifact-level filter matters:
+                shade reads project.getArtifacts(), not the dependency model.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.3</version>
+                <executions>
+                    <execution>
+                        <id>shade-all-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                Enforce that xnio-nio is absent from the resolved dependency set.
+                Runs in the verify phase, after shade has already packaged the JAR,
+                so a failure here means the artifact-level filter did not work.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-xnio-excluded-from-packaged-artifact</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <message>
+                                        xnio-nio must not appear in the resolved artifact set.
+                                        The filter-resolved-artifacts goal of edm-maven-plugin
+                                        is expected to have removed it before packaging.
+                                    </message>
+                                    <excludes>
+                                        <exclude>org.jboss.xnio:xnio-nio</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
