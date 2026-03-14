@@ -32,6 +32,23 @@
                     </execution>
                 </executions>
             </plugin>
+            <!--
+                Register Sisu components (including the AbstractMavenLifecycleParticipant extension)
+                so Maven can discover them at runtime via META-INF/sisu/javax.inject.Named.
+            -->
+            <plugin>
+                <groupId>org.eclipse.sisu</groupId>
+                <artifactId>sisu-maven-plugin</artifactId>
+                <version>0.9.0.M3</version>
+                <executions>
+                    <execution>
+                        <id>generate-index</id>
+                        <goals>
+                            <goal>main-index</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>

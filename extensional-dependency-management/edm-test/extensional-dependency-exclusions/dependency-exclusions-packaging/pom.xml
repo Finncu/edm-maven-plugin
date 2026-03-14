@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dependency-exclusions-packaging</artifactId>
+    <name>IT - dependency exclusions survive packaging (shade)</name>
+
+    <!--
+        Integration test that verifies exclusions injected by the Extension survive packaging.
+
+        The parent POM (extensional-dependency-exclusions) activates the edm-maven-plugin
+        as a Maven Extension (<extensions>true</extensions>) and declares:
+
+            undertow-core -> exclude xnio-nio
+
+        The ExtensionalDependencyManagementExtension runs in afterProjectsRead() and injects
+        the exclusion directly into the <dependency> on undertow-core declared in this module.
+        Because this happens BEFORE the Maven resolver runs, xnio-nio is never added to
+        project.getArtifacts() and therefore never included in the shade uber-JAR.
+
+        This module:
+          a. Declares undertow-core as a compile dependency (version from BOM).
+          b. Builds an uber-JAR via maven-shade-plugin.
+          c. Asserts via maven-enforcer-plugin (verify phase) that xnio-nio is absent.
+
+        No plugin configuration is needed here — the extension handles everything.
+    -->
+
+    <parent>
+        <groupId>de.silverhorn.fca.maven</groupId>
+        <artifactId>extensional-dependency-exclusions</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.undertow</groupId>
+            <artifactId>undertow-core</artifactId>
+            <!-- version managed by wildfly-javaee7 BOM imported in edm-test parent -->
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!--
+                Build an uber-JAR that contains all compile+runtime dependencies.
+                This is the packaging scenario where the artifact-level filter matters:
+                shade reads project.getArtifacts(), not the dependency model.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.3</version>
+                <executions>
+                    <execution>
+                        <id>shade-all-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                Enforce that xnio-nio is absent from the resolved dependency set.
+                Runs in the verify phase, after shade has already packaged the JAR,
+                so a failure here means the artifact-level filter did not work.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-xnio-excluded-from-packaged-artifact</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <message>
+                                        xnio-nio must not appear in the resolved artifact set.
+                                        The ExtensionalDependencyManagementExtension is expected
+                                        to have injected the exclusion into undertow-core before
+                                        the resolver ran, so xnio-nio should never have been
+                                        resolved in the first place.
+                                    </message>
+                                    <excludes>
+                                        <exclude>org.jboss.xnio:xnio-nio</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>
