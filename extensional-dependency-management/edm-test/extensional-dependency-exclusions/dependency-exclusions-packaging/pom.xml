@@ -7,20 +7,24 @@
     <name>IT - dependency exclusions survive packaging (shade)</name>
 
     <!--
-        Integration test that verifies the second line of defence:
-        the filter-resolved-artifacts goal must remove excluded artifacts from
-        project.getArtifacts() so that packaging tools (here: maven-shade-plugin)
-        never include them in the final JAR.
+        Integration test that verifies exclusions injected by the Extension survive packaging.
 
-        The parent POM (extensional-dependency-exclusions) already configures the
-        edm-maven-plugin to:
-          1. extend-dependency-management  – adds xnio-nio exclusion to undertow-core in the model
-          2. filter-resolved-artifacts     – removes xnio-nio from the resolved artifact set
+        The parent POM (extensional-dependency-exclusions) activates the edm-maven-plugin
+        as a Maven Extension (<extensions>true</extensions>) and declares:
 
-        This module then:
+            undertow-core -> exclude xnio-nio
+
+        The ExtensionalDependencyManagementExtension runs in afterProjectsRead() and injects
+        the exclusion directly into the <dependency> on undertow-core declared in this module.
+        Because this happens BEFORE the Maven resolver runs, xnio-nio is never added to
+        project.getArtifacts() and therefore never included in the shade uber-JAR.
+
+        This module:
           a. Declares undertow-core as a compile dependency (version from BOM).
           b. Builds an uber-JAR via maven-shade-plugin.
           c. Asserts via maven-enforcer-plugin (verify phase) that xnio-nio is absent.
+
+        No plugin configuration is needed here — the extension handles everything.
     -->
 
     <parent>
@@ -84,8 +88,10 @@
                                 <bannedDependencies>
                                     <message>
                                         xnio-nio must not appear in the resolved artifact set.
-                                        The filter-resolved-artifacts goal of edm-maven-plugin
-                                        is expected to have removed it before packaging.
+                                        The ExtensionalDependencyManagementExtension is expected
+                                        to have injected the exclusion into undertow-core before
+                                        the resolver ran, so xnio-nio should never have been
+                                        resolved in the first place.
                                     </message>
                                     <excludes>
                                         <exclude>org.jboss.xnio:xnio-nio</exclude>

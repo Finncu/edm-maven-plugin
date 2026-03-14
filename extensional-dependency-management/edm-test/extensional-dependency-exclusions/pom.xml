@@ -21,32 +21,38 @@
 
     <build>
         <plugins>
+            <!--
+                Configure the edm-maven-plugin as a Maven Extension so that
+                ExtensionalDependencyManagementExtension (AbstractMavenLifecycleParticipant)
+                is activated for the entire reactor.
+
+                With <extensions>true</extensions> Maven loads the plugin JAR as a build
+                extension and calls afterProjectsRead() before any dependency resolution
+                takes place.  The extension reads the <configuration> block below and
+                injects the declared exclusions into the direct <dependencies> of every
+                reactor module that declares the matching dependency.
+
+                Child modules (dependency-exclusions-enforcing, dependency-exclusions-packaging)
+                do NOT need any plugin configuration — the extension handles everything.
+            -->
             <plugin>
                 <groupId>de.silverhorn.fca.maven</groupId>
                 <artifactId>edm-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>extensional-dependency-exclusions</id>
-                        <goals>
-                            <goal>extend-dependency-management</goal>
-                            <goal>filter-resolved-artifacts</goal>
-                        </goals>
-                        <configuration>
-                            <dependencies>
-                                <dependency>
-                                    <groupId>io.undertow</groupId>
-                                    <artifactId>undertow-core</artifactId>
-                                    <exclusions>
-                                        <exclusion>
-                                            <groupId>org.jboss.xnio</groupId>
-                                            <artifactId>xnio-nio</artifactId>
-                                        </exclusion>
-                                    </exclusions>
-                                </dependency>
-                            </dependencies>
-                        </configuration>
-                    </execution>
-                </executions>
+                <extensions>true</extensions>
+                <configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>io.undertow</groupId>
+                            <artifactId>undertow-core</artifactId>
+                            <exclusions>
+                                <exclusion>
+                                    <groupId>org.jboss.xnio</groupId>
+                                    <artifactId>xnio-nio</artifactId>
+                                </exclusion>
+                            </exclusions>
+                        </dependency>
+                    </dependencies>
+                </configuration>
             </plugin>
         </plugins>
     </build>
