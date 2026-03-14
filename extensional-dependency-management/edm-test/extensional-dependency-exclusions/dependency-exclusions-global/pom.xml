@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>dependency-exclusions-global</artifactId>
+    <name>IT - global exclusions block transitively-carried artifacts</name>
+
+    <!--
+        Integration test for the <globalExclusions> feature.
+
+        Scenario:
+          This module declares a direct dependency on undertow-core. undertow-core transitively
+          pulls in jboss-logging. This module has NO direct dependency on jboss-logging and
+          therefore cannot use a targeted <exclusion> on it.
+
+          The parent POM (extensional-dependency-exclusions) configures the edm-maven-plugin
+          extension with a <globalExclusions> entry for jboss-logging. The extension injects
+          this exclusion into every direct dependency of every reactor module — including the
+          undertow-core entry in this module — before the resolver runs.
+
+          Result: jboss-logging never enters the resolved artifact set and is therefore absent
+          from the shade uber-JAR.
+
+        This test verifies that <globalExclusions> correctly handles the case where the carrier
+        of the unwanted artifact is itself only transitively present or where the user does not
+        want to enumerate all possible carriers.
+    -->
+
+    <parent>
+        <groupId>de.silverhorn.fca.maven</groupId>
+        <artifactId>extensional-dependency-exclusions</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <dependencies>
+        <!--
+            undertow-core transitively brings in jboss-logging.
+            We do NOT declare jboss-logging directly — the globalExclusion must handle it.
+        -->
+        <dependency>
+            <groupId>io.undertow</groupId>
+            <artifactId>undertow-core</artifactId>
+            <!-- version managed by wildfly-javaee7 BOM imported in edm-test parent -->
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!-- Build an uber-JAR to make the packaging-level exclusion verifiable -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.3</version>
+                <executions>
+                    <execution>
+                        <id>shade-all-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                Assert that jboss-logging is absent from the resolved artifact set.
+                jboss-logging is a framework provided by the target runtime (e.g. WildFly)
+                and must not be bundled in the delivered JAR.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-jboss-logging-globally-excluded</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <message>
+                                        jboss-logging must not appear in the resolved artifact set.
+                                        It is provided by the target runtime and must be excluded
+                                        globally via edm-maven-plugin's globalExclusions feature.
+                                        The carrier (undertow-core) is a direct dependency of this
+                                        module but jboss-logging itself is not — this test verifies
+                                        that globalExclusions handles transitive carriers correctly.
+                                    </message>
+                                    <excludes>
+                                        <exclude>org.jboss.logging:jboss-logging</exclude>
+                                    </excludes>
+                                </bannedDependencies>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

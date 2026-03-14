@@ -18,6 +18,7 @@
     <modules>
         <module>dependency-exclusions-enforcing</module>
         <module>dependency-exclusions-packaging</module>
+        <module>dependency-exclusions-global</module>
     </modules>
 
     <build>
@@ -29,18 +30,28 @@
 
                 With <extensions>true</extensions> Maven loads the plugin JAR as a build
                 extension and calls afterProjectsRead() before any dependency resolution
-                takes place.  The extension reads the <configuration> block below and
-                injects the declared exclusions into the direct <dependencies> of every
-                reactor module that declares the matching dependency.
+                takes place.
 
-                Child modules (dependency-exclusions-enforcing, dependency-exclusions-packaging)
-                do NOT need any plugin configuration — the extension handles everything.
+                Two exclusion modes are demonstrated here:
+
+                1. <dependencies>  — targeted exclusions
+                   Exclusions are injected only into direct dependencies that match the
+                   configured carrier (undertow-core → exclude xnio-nio).
+
+                2. <globalExclusions> — blanket exclusions
+                   Exclusions are injected into EVERY direct dependency of EVERY reactor
+                   module. Use this when the carrier is itself only transitively present
+                   or when you want a blanket ban regardless of the transitive path.
+                   (e.g. jboss-logging is provided by the target runtime and must never
+                   be bundled, no matter which dependency brings it in.)
             -->
             <plugin>
                 <groupId>de.silverhorn.fca.maven</groupId>
                 <artifactId>edm-maven-plugin</artifactId>
                 <extensions>true</extensions>
                 <configuration>
+
+                    <!-- Mode 1: targeted — only applied when undertow-core is a direct dep -->
                     <dependencies>
                         <dependency>
                             <groupId>io.undertow</groupId>
@@ -53,6 +64,20 @@
                             </exclusions>
                         </dependency>
                     </dependencies>
+
+                    <!--
+                        Mode 2: global — injected into every direct dependency.
+                        jboss-logging is provided by the target runtime (e.g. WildFly/JBoss)
+                        and must never be bundled in a delivered artifact, regardless of which
+                        transitive dependency carries it.
+                    -->
+                    <globalExclusions>
+                        <exclusion>
+                            <groupId>org.jboss.logging</groupId>
+                            <artifactId>jboss-logging</artifactId>
+                        </exclusion>
+                    </globalExclusions>
+
                 </configuration>
             </plugin>
         </plugins>

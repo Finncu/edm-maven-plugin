@@ -13,8 +13,8 @@
 package de.silverhorn.fca.maven;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,45 +39,30 @@ import org.slf4j.LoggerFactory;
  * Maven build extension that propagates configured dependency exclusions to every project in the
  * reactor <em>before</em> the dependency resolver runs.
  *
- * <h2>Motivation</h2>
+ * <h2>Two exclusion modes</h2>
  *
+ * <h3>Mode 1 — targeted exclusions ({@code <dependencies>})</h3>
  * <p>
- * Maven's {@code <dependencyManagement>} section does not honour {@code <exclusions>} — exclusions
- * are only evaluated when they appear on a <em>direct</em> {@code <dependency>} declaration.
- * This means that a parent POM cannot centrally exclude a transitive artifact for all child
- * modules via {@code <dependencyManagement>} alone.
+ * Exclusions are declared on a specific carrier dependency. The extension injects the exclusion
+ * into every direct {@code <dependency>} declaration whose {@code groupId:artifactId} matches
+ * the configured carrier.
+ * </p>
+ * <p>
+ * Use this when you know which direct dependency transitively pulls in the unwanted artifact.
  * </p>
  *
- * <h2>How it works</h2>
- *
+ * <h3>Mode 2 — global exclusions ({@code <globalExclusions>})</h3>
  * <p>
- * This extension hooks into {@link #afterProjectsRead(MavenSession)} which is called after all
- * POMs have been read and the project graph has been built, but <em>before</em> any dependency
- * resolution takes place. At this point the extension:
+ * The artifact to exclude is declared without a carrier. The extension injects the exclusion into
+ * <em>every</em> direct dependency of every reactor project. This guarantees that the artifact
+ * cannot enter the resolved set via any transitive path, regardless of which dependency carries it.
  * </p>
- * <ol>
- *   <li>Scans every project in the reactor for a configuration of
- *       {@code de.silverhorn.fca.maven:edm-maven-plugin} that contains a
- *       {@code <dependencies>} block with {@code <exclusions>}.</li>
- *   <li>Collects a map of {@code groupId:artifactId → List<Exclusion>} from that
- *       configuration.</li>
- *   <li>For every project in the reactor, iterates over its <em>direct</em>
- *       {@code <dependencies>} and adds the configured exclusions to any dependency whose
- *       {@code groupId:artifactId} matches.</li>
- * </ol>
- *
  * <p>
- * Because this happens before resolution, the Maven resolver will honour the injected exclusions
- * and will never add the excluded transitive artifacts to {@code project.getArtifacts()}.
- * Packaging tools such as {@code maven-shade-plugin} and {@code maven-assembly-plugin} therefore
- * never see the excluded artifacts.
+ * Use this when the carrier is itself only transitively present (i.e. your project has no direct
+ * dependency on it), or when you want a blanket ban regardless of the transitive path.
  * </p>
  *
  * <h2>Configuration</h2>
- *
- * <p>
- * Configure the plugin once in the parent POM with {@code <extensions>true</extensions>}:
- * </p>
  *
  * <pre>
  * &lt;plugin&gt;
@@ -85,6 +70,8 @@ import org.slf4j.LoggerFactory;
  *   &lt;artifactId&gt;edm-maven-plugin&lt;/artifactId&gt;
  *   &lt;extensions&gt;true&lt;/extensions&gt;
  *   &lt;configuration&gt;
+ *
+ *     &lt;!-- Mode 1: targeted — only applied when undertow-core is a direct dependency --&gt;
  *     &lt;dependencies&gt;
  *       &lt;dependency&gt;
  *         &lt;groupId&gt;io.undertow&lt;/groupId&gt;
@@ -97,13 +84,25 @@ import org.slf4j.LoggerFactory;
  *         &lt;/exclusions&gt;
  *       &lt;/dependency&gt;
  *     &lt;/dependencies&gt;
+ *
+ *     &lt;!-- Mode 2: global — injected into every direct dependency, regardless of carrier --&gt;
+ *     &lt;globalExclusions&gt;
+ *       &lt;exclusion&gt;
+ *         &lt;groupId&gt;ch.qos.logback&lt;/groupId&gt;
+ *         &lt;artifactId&gt;logback-classic&lt;/artifactId&gt;
+ *       &lt;/exclusion&gt;
+ *       &lt;exclusion&gt;
+ *         &lt;groupId&gt;org.slf4j&lt;/groupId&gt;
+ *         &lt;artifactId&gt;slf4j-simple&lt;/artifactId&gt;
+ *       &lt;/exclusion&gt;
+ *     &lt;/globalExclusions&gt;
+ *
  *   &lt;/configuration&gt;
  * &lt;/plugin&gt;
  * </pre>
  *
  * <p>
- * Child modules do not need any additional configuration. The extension automatically applies
- * the exclusions to all modules in the reactor.
+ * Both modes can be combined. Child modules do not need any additional configuration.
  * </p>
  */
 @Named("extensional-dependency-management-extension")
@@ -122,64 +121,158 @@ public class ExtensionalDependencyManagementExtension extends AbstractMavenLifec
          return;
       }
 
-      // Collect the exclusion configuration from every project that declares the plugin.
-      // We merge configurations from all projects so that a child POM can add further exclusions
-      // on top of what the parent already declared.
-      Map<String, List<Exclusion>> exclusionsByGav = collectExclusionConfig(projects);
+      // --- Mode 1: targeted exclusions keyed by carrier dependency ---
+      Map<String, List<Exclusion>> exclusionsByCarrier = collectTargetedExclusionConfig(projects);
 
-      if (exclusionsByGav.isEmpty()) {
+      // --- Mode 2: global exclusions applied to every direct dependency ---
+      List<Exclusion> globalExclusions = collectGlobalExclusionConfig(projects);
+
+      if (exclusionsByCarrier.isEmpty() && globalExclusions.isEmpty()) {
          log.debug("[edm] No exclusion configuration found in reactor — skipping.");
          return;
       }
 
-      log.info("[edm] Propagating {} exclusion rule(s) to all reactor projects:", exclusionsByGav.size());
-      exclusionsByGav.forEach((gav, excls) ->
-            log.info("[edm]   {} -> [{}]", gav,
-                  excls.stream().map(e -> e.getGroupId() + ":" + e.getArtifactId())
-                       .collect(Collectors.joining(", "))));
+      if (!exclusionsByCarrier.isEmpty()) {
+         log.info("[edm] Targeted exclusion rules ({}):", exclusionsByCarrier.size());
+         exclusionsByCarrier.forEach((carrier, excls) ->
+               log.info("[edm]   {} -> [{}]", carrier,
+                     excls.stream().map(e -> e.getGroupId() + ":" + e.getArtifactId())
+                          .collect(Collectors.joining(", "))));
+      }
 
-      // Apply the collected exclusions to the direct dependencies of every project.
+      if (!globalExclusions.isEmpty()) {
+         log.info("[edm] Global exclusions (injected into every direct dependency): [{}]",
+               globalExclusions.stream().map(e -> e.getGroupId() + ":" + e.getArtifactId())
+                               .collect(Collectors.joining(", ")));
+      }
+
       for (MavenProject project : projects) {
-         applyExclusionsToProject(project, exclusionsByGav);
+         applyExclusionsToProject(project, exclusionsByCarrier, globalExclusions);
       }
    }
 
    // -------------------------------------------------------------------------
-   // Configuration reading
+   // Configuration reading — Mode 1 (targeted)
+   // -------------------------------------------------------------------------
+
+   private Map<String, List<Exclusion>> collectTargetedExclusionConfig(List<MavenProject> projects) {
+      Map<String, List<Exclusion>> result = new LinkedHashMap<>();
+      for (MavenProject project : projects) {
+         Plugin plugin = findEdmPlugin(project);
+         if (plugin == null) {
+            continue;
+         }
+         mergeTargetedExclusionsFromDom(result, (Xpp3Dom) plugin.getConfiguration(),
+               project.getArtifactId());
+         for (PluginExecution execution : plugin.getExecutions()) {
+            mergeTargetedExclusionsFromDom(result, (Xpp3Dom) execution.getConfiguration(),
+                  project.getArtifactId());
+         }
+      }
+      return result;
+   }
+
+   private void mergeTargetedExclusionsFromDom(Map<String, List<Exclusion>> target,
+                                                Xpp3Dom configDom,
+                                                String sourceProject) {
+      if (configDom == null) {
+         return;
+      }
+      Xpp3Dom dependenciesNode = configDom.getChild("dependencies");
+      if (dependenciesNode == null) {
+         return;
+      }
+      for (Xpp3Dom depNode : dependenciesNode.getChildren("dependency")) {
+         String groupId    = childValue(depNode, "groupId");
+         String artifactId = childValue(depNode, "artifactId");
+         if (groupId == null || artifactId == null) {
+            log.warn("[edm] Skipping incomplete <dependency> in {} (missing groupId or artifactId)",
+                  sourceProject);
+            continue;
+         }
+         String depKey = groupId + ":" + artifactId;
+         Xpp3Dom exclusionsNode = depNode.getChild("exclusions");
+         if (exclusionsNode == null) {
+            continue;
+         }
+         for (Xpp3Dom exclNode : exclusionsNode.getChildren("exclusion")) {
+            String exclGroupId    = childValue(exclNode, "groupId");
+            String exclArtifactId = childValue(exclNode, "artifactId");
+            if (exclGroupId == null || exclArtifactId == null) {
+               log.warn("[edm] Skipping incomplete <exclusion> under {} in {}",
+                     depKey, sourceProject);
+               continue;
+            }
+            Exclusion exclusion = new Exclusion();
+            exclusion.setGroupId(exclGroupId);
+            exclusion.setArtifactId(exclArtifactId);
+            target.computeIfAbsent(depKey, k -> new ArrayList<>()).add(exclusion);
+         }
+      }
+   }
+
+   // -------------------------------------------------------------------------
+   // Configuration reading — Mode 2 (global)
    // -------------------------------------------------------------------------
 
    /**
-    * Scans all projects for plugin configurations of {@code edm-maven-plugin} and merges the
-    * declared {@code <dependencies>/<dependency>/<exclusions>} into a single map.
-    *
-    * @param projects all projects in the reactor
-    * @return map of {@code "groupId:artifactId" → List<Exclusion>}; never {@code null}
+    * Collects {@code <globalExclusions>/<exclusion>} entries from all projects that declare
+    * the plugin. Global exclusions are merged across all projects (de-duplicated by
+    * {@code groupId:artifactId}).
     */
-   private Map<String, List<Exclusion>> collectExclusionConfig(List<MavenProject> projects) {
-      Map<String, List<Exclusion>> result = new LinkedHashMap<>();
+   private List<Exclusion> collectGlobalExclusionConfig(List<MavenProject> projects) {
+      // Use a Set to de-duplicate across multiple project declarations
+      Set<String> seen = new LinkedHashSet<>();
+      List<Exclusion> result = new ArrayList<>();
 
       for (MavenProject project : projects) {
          Plugin plugin = findEdmPlugin(project);
          if (plugin == null) {
             continue;
          }
-
-         // Read top-level <configuration> block
-         mergeExclusionsFromDom(result, (Xpp3Dom) plugin.getConfiguration(), project.getArtifactId());
-
-         // Also read <configuration> blocks inside <executions>
+         mergeGlobalExclusionsFromDom(result, seen, (Xpp3Dom) plugin.getConfiguration(),
+               project.getArtifactId());
          for (PluginExecution execution : plugin.getExecutions()) {
-            mergeExclusionsFromDom(result, (Xpp3Dom) execution.getConfiguration(), project.getArtifactId());
+            mergeGlobalExclusionsFromDom(result, seen, (Xpp3Dom) execution.getConfiguration(),
+                  project.getArtifactId());
          }
       }
-
       return result;
    }
 
-   /**
-    * Finds the {@code edm-maven-plugin} entry in the given project's build plugins (including
-    * inherited plugin management entries).
-    */
+   private void mergeGlobalExclusionsFromDom(List<Exclusion> target,
+                                              Set<String> seen,
+                                              Xpp3Dom configDom,
+                                              String sourceProject) {
+      if (configDom == null) {
+         return;
+      }
+      Xpp3Dom globalExclusionsNode = configDom.getChild("globalExclusions");
+      if (globalExclusionsNode == null) {
+         return;
+      }
+      for (Xpp3Dom exclNode : globalExclusionsNode.getChildren("exclusion")) {
+         String exclGroupId    = childValue(exclNode, "groupId");
+         String exclArtifactId = childValue(exclNode, "artifactId");
+         if (exclGroupId == null || exclArtifactId == null) {
+            log.warn("[edm] Skipping incomplete <globalExclusion> in {} (missing groupId or artifactId)",
+                  sourceProject);
+            continue;
+         }
+         String key = exclGroupId + ":" + exclArtifactId;
+         if (seen.add(key)) {
+            Exclusion exclusion = new Exclusion();
+            exclusion.setGroupId(exclGroupId);
+            exclusion.setArtifactId(exclArtifactId);
+            target.add(exclusion);
+         }
+      }
+   }
+
+   // -------------------------------------------------------------------------
+   // Shared helpers
+   // -------------------------------------------------------------------------
+
    private Plugin findEdmPlugin(MavenProject project) {
       if (project.getBuild() == null) {
          return null;
@@ -193,58 +286,6 @@ public class ExtensionalDependencyManagementExtension extends AbstractMavenLifec
       return null;
    }
 
-   /**
-    * Parses a {@code <configuration>} DOM node and merges any
-    * {@code <dependencies>/<dependency>/<exclusions>/<exclusion>} entries into {@code target}.
-    */
-   private void mergeExclusionsFromDom(Map<String, List<Exclusion>> target,
-                                        Xpp3Dom configDom,
-                                        String sourceProject) {
-      if (configDom == null) {
-         return;
-      }
-
-      Xpp3Dom dependenciesNode = configDom.getChild("dependencies");
-      if (dependenciesNode == null) {
-         return;
-      }
-
-      for (Xpp3Dom depNode : dependenciesNode.getChildren("dependency")) {
-         String groupId    = childValue(depNode, "groupId");
-         String artifactId = childValue(depNode, "artifactId");
-
-         if (groupId == null || artifactId == null) {
-            log.warn("[edm] Skipping incomplete <dependency> entry in {} (missing groupId or artifactId)",
-                  sourceProject);
-            continue;
-         }
-
-         String depKey = groupId + ":" + artifactId;
-
-         Xpp3Dom exclusionsNode = depNode.getChild("exclusions");
-         if (exclusionsNode == null) {
-            continue;
-         }
-
-         for (Xpp3Dom exclNode : exclusionsNode.getChildren("exclusion")) {
-            String exclGroupId    = childValue(exclNode, "groupId");
-            String exclArtifactId = childValue(exclNode, "artifactId");
-
-            if (exclGroupId == null || exclArtifactId == null) {
-               log.warn("[edm] Skipping incomplete <exclusion> under {} in {} (missing groupId or artifactId)",
-                     depKey, sourceProject);
-               continue;
-            }
-
-            Exclusion exclusion = new Exclusion();
-            exclusion.setGroupId(exclGroupId);
-            exclusion.setArtifactId(exclArtifactId);
-
-            target.computeIfAbsent(depKey, k -> new ArrayList<>()).add(exclusion);
-         }
-      }
-   }
-
    private static String childValue(Xpp3Dom node, String childName) {
       Xpp3Dom child = node.getChild(childName);
       return (child != null) ? child.getValue() : null;
@@ -255,41 +296,53 @@ public class ExtensionalDependencyManagementExtension extends AbstractMavenLifec
    // -------------------------------------------------------------------------
 
    /**
-    * Injects the collected exclusions into the direct {@code <dependencies>} of the given project.
+    * Injects exclusions into the direct {@code <dependencies>} of the given project.
     *
-    * <p>
-    * Only dependencies whose {@code groupId:artifactId} matches a key in {@code exclusionsByGav}
-    * are modified. Duplicate exclusions are silently skipped.
-    * </p>
+    * <ul>
+    *   <li><b>Targeted exclusions</b>: only injected into dependencies whose
+    *       {@code groupId:artifactId} matches the configured carrier key.</li>
+    *   <li><b>Global exclusions</b>: injected into <em>every</em> direct dependency,
+    *       so the excluded artifact cannot enter the resolved set via any transitive path.</li>
+    * </ul>
     */
    private void applyExclusionsToProject(MavenProject project,
-                                          Map<String, List<Exclusion>> exclusionsByGav) {
+                                          Map<String, List<Exclusion>> exclusionsByCarrier,
+                                          List<Exclusion> globalExclusions) {
       List<Dependency> directDeps = project.getDependencies();
       if (directDeps == null || directDeps.isEmpty()) {
          return;
       }
 
       for (Dependency dep : directDeps) {
-         String depKey = dep.getGroupId() + ":" + dep.getArtifactId();
-         List<Exclusion> toAdd = exclusionsByGav.get(depKey);
-         if (toAdd == null || toAdd.isEmpty()) {
-            continue;
-         }
-
          Set<String> existingKeys = dep.getExclusions().stream()
                .map(e -> e.getGroupId() + ":" + e.getArtifactId())
                .collect(Collectors.toSet());
 
-         List<Exclusion> newExclusions = toAdd.stream()
-               .filter(e -> !existingKeys.contains(e.getGroupId() + ":" + e.getArtifactId()))
-               .collect(Collectors.toList());
+         List<Exclusion> toAdd = new ArrayList<>();
 
-         if (!newExclusions.isEmpty()) {
-            dep.getExclusions().addAll(newExclusions);
-            log.info("[edm] {}:{} — injected exclusion(s) [{}] into direct dependency {}",
+         // Mode 1: targeted — only for matching carrier
+         String depKey = dep.getGroupId() + ":" + dep.getArtifactId();
+         List<Exclusion> targeted = exclusionsByCarrier.get(depKey);
+         if (targeted != null) {
+            targeted.stream()
+                  .filter(e -> !existingKeys.contains(e.getGroupId() + ":" + e.getArtifactId()))
+                  .forEach(toAdd::add);
+         }
+
+         // Mode 2: global — applied to every direct dependency
+         // Skip self-exclusion: don't add an exclusion for the dependency itself
+         globalExclusions.stream()
+               .filter(e -> !existingKeys.contains(e.getGroupId() + ":" + e.getArtifactId()))
+               .filter(e -> !(e.getGroupId().equals(dep.getGroupId())
+                     && e.getArtifactId().equals(dep.getArtifactId())))
+               .forEach(toAdd::add);
+
+         if (!toAdd.isEmpty()) {
+            dep.getExclusions().addAll(toAdd);
+            log.info("[edm] {}:{} — injected [{}] into {}",
                   project.getGroupId(), project.getArtifactId(),
-                  newExclusions.stream().map(e -> e.getGroupId() + ":" + e.getArtifactId())
-                               .collect(Collectors.joining(", ")),
+                  toAdd.stream().map(e -> e.getGroupId() + ":" + e.getArtifactId())
+                       .collect(Collectors.joining(", ")),
                   depKey);
          }
       }
